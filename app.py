@@ -25,17 +25,18 @@ CREATE TABLE IF NOT EXISTS ricerche (
 """)
 
 def descrizione_meteo(code):
-    if code == 0: return "Sereno"
-    if code in [1, 2]: return "Parzialmente nuvoloso"
-    if code == 3: return "Nuvoloso"
-    if 45 <= code <= 48: return "Nebbia"
-    if 51 <= code <= 57: return "Pioviggine"
-    if 61 <= code <= 67: return "Pioggia"
-    if 71 <= code <= 77: return "Neve"
-    if 80 <= code <= 82: return "Rovesci"
-    if code == 95: return "Temporale"
-    if 96 <= code <= 99: return "Temporale con grandine"
-    return "Non disponibile"
+    if code == 0: return "Clear"
+    if code in [1, 2]: return "Partly cloudy"
+    if code == 3: return "Cloudy"
+    if 45 <= code <= 48: return "Fog"
+    if 51 <= code <= 57: return "Drizzle"
+    if 61 <= code <= 67: return "Rain"
+    if 71 <= code <= 77: return "Snow"
+    if 80 <= code <= 82: return "Showers"
+    if code == 95: return "Thunderstorm"
+    if 96 <= code <= 99: return "Thunderstorm with hail"
+    return "Unavailable"
+
 
 @app.route('/')
 def index():
@@ -56,13 +57,13 @@ def meteo():
         geo_data = geo_res.json()
     except requests.exceptions.RequestException as e:
         print("Errore nella richiesta a Nominatim:", e)
-        return jsonify({"error": "Errore nella geolocalizzazione"}), 500
+        return jsonify({"error": "Geolocation error"}), 500
     except ValueError:
         print("Risposta non valida da Nominatim:", geo_res.text)
-        return jsonify({"error": "Formato risposta non valido"}), 500
+        return jsonify({"error": "Invalid response format"}), 500
 
     if not geo_data:
-        return jsonify({"error": "Città non trovata"}), 404
+        return jsonify({"error": "City not found"}), 404
 
     lat = geo_data[0]['lat']
     lon = geo_data[0]['lon']
@@ -75,14 +76,14 @@ def meteo():
         meteo_res.raise_for_status()
         meteo_json = meteo_res.json()
         if 'current_weather' not in meteo_json:
-            return jsonify({"error": "Dati meteo non disponibili"}), 500
+            return jsonify({"error": "Weather data not available"}), 500
         meteo_data = meteo_json['current_weather']
     except requests.exceptions.RequestException as e:
         print("Errore nella richiesta a Open-Meteo:", e)
-        return jsonify({"error": "Errore nel recupero dei dati meteo"}), 500
+        return jsonify({"error": "Weather data retrieval error"}), 500
     except ValueError:
         print("Risposta non valida da Open-Meteo:", meteo_res.text)
-        return jsonify({"error": "Formato risposta meteo non valido"}), 500
+        return jsonify({"error": "Invalid weather response format"}), 500
 
     # Salvataggio e risposta
     temperatura = meteo_data['temperature']
@@ -100,7 +101,7 @@ def meteo():
         ricerche = [{"citta": r[0], "data": r[1], "temperatura": r[2]} for r in risultati]
     except Exception as e:
         print("Errore con il database:", e)
-        return jsonify({"error": "Errore nel salvataggio dei dati"}), 500
+        return jsonify({"error": "Error saving data"}), 500
 
     return jsonify({
         "citta": city,
@@ -115,10 +116,10 @@ def pulisci():
     try:
         cursor.execute("DELETE FROM ricerche")
         db.commit()
-        return jsonify({"message": "Cronologia pulita"})
+        return jsonify({"message": "History cleared"})
     except Exception as e:
         print(e)
-        return jsonify({"error": "Errore durante la cancellazione"}), 500
+        return jsonify({"error": "Error during deletion"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
